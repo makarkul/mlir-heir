@@ -1,4 +1,4 @@
-// RUN: mlir-opt %s \
+// RUN: heir-opt %s \
 // RUN:   -pass-pipeline="builtin.module( \
 // RUN:      convert-math-to-funcs{convert-ctlz}, \
 // RUN:      func.func(convert-scf-to-cf,convert-arith-to-llvm), \
@@ -16,7 +16,7 @@ func.func @test_7i32_to_29() -> i32 {
 // CHECK_TEST_7i32_TO_29: 29
 
 
-// RUN: mlir-opt %s \
+// RUN: heir-opt %s \
 // RUN:   -pass-pipeline="builtin.module( \
 // RUN:      convert-math-to-funcs{convert-ctlz}, \
 // RUN:      func.func(convert-scf-to-cf,convert-arith-to-llvm), \
