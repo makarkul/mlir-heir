@@ -1,6 +1,9 @@
 // RUN: heir-opt %s --affine-full-unroll > %t
 // RUN: FileCheck %s < %t
 
+// RUN: heir-opt %s --affine-full-unroll-rewrite > %t
+// RUN: FileCheck %s < %t
+
 func.func @test_single_nested_loop(%buffer: memref<4xi32>) -> (i32) {
   %sum_0 = arith.constant 0 : i32
   // CHECK-NOT: affine.for

@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
   mlir::registerAllPasses();
 
   mlir::PassRegistration<mlir::heir::AffineFullUnrollPass>();
+  mlir::PassRegistration<mlir::heir::AffineFullUnrollPassAsPatternRewrite>();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "HEIR Pass Driver", registry)
