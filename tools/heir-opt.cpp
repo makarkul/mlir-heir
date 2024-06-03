@@ -1,4 +1,5 @@
 #include "lib/Transform/Affine/AffineFullUnroll.h"
+#include "lib/Transform/Arith/MulToAdd.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Pass/PassManager.h"
@@ -14,6 +15,7 @@ int main(int argc, char **argv) {
 
   mlir::PassRegistration<mlir::heir::AffineFullUnrollPass>();
   mlir::PassRegistration<mlir::heir::AffineFullUnrollPassAsPatternRewrite>();
+  mlir::PassRegistration<mlir::heir::MulToAddPass>();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "HEIR Pass Driver", registry)
