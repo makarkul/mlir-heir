@@ -1,4 +1,4 @@
-#include "lib/Transform/Affine/AffineFullUnroll.h"
+#include "lib/Transform/Affine/Passes.h"
 #include "lib/Transform/Arith/MulToAdd.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -13,8 +13,7 @@ int main(int argc, char **argv) {
 
   mlir::registerAllPasses();
 
-  mlir::PassRegistration<mlir::heir::AffineFullUnrollPass>();
-  mlir::PassRegistration<mlir::heir::AffineFullUnrollPassAsPatternRewrite>();
+  mlir::heir::registerAffinePasses();
   mlir::PassRegistration<mlir::heir::MulToAddPass>();
 
   return mlir::asMainReturnCode(

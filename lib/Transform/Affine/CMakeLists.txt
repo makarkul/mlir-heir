@@ -1,6 +1,7 @@
 add_mlir_library(AffineFullUnroll
     AffineFullUnroll.cpp
-    
+    AffineFullUnrollPatternRewrite.cpp
+
     ${PROJECT_SOURCE_DIR}/lib/Transform/Affine
     ADDITIONAL_HEADER_DIRS
 
