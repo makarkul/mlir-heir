@@ -11,4 +11,5 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(MLIRHeir)
 
 add_subdirectory(tools)
+add_subdirectory(lib)
 add_subdirectory(tests)
