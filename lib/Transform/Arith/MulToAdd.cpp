@@ -7,6 +7,9 @@
 namespace mlir {
   namespace heir {
 
+#define GEN_PASS_DEF_MULTOADD
+#include "lib/Transform/Arith/Passes.h.inc"
+
     using arith::AddIOp;
     using arith::ConstantOp;
     using arith::MulIOp;
@@ -37,7 +40,8 @@ namespace mlir {
         }
 
         ConstantOp newConstant = rewriter.create<ConstantOp>(
-          rhsDefiningOp.getLoc(), rewriter.getIntegerAttr(rhs.getType(), value/2));
+          rhsDefiningOp.getLoc(), 
+          rewriter.getIntegerAttr(rhs.getType(), value/2));
         MulIOp newMul = rewriter.create<MulIOp>(op.getLoc(), lhs, newConstant);
         AddIOp newAdd = rewriter.create<AddIOp>(op.getLoc(), newMul, newMul);
 
@@ -68,7 +72,8 @@ namespace mlir {
         // it has higher benefit.
 
         ConstantOp newConstant = rewriter.create<ConstantOp>(
-          rhsDefiningOp.getLoc(), rewriter.getIntegerAttr(rhs.getType(), value -1));
+          rhsDefiningOp.getLoc(), 
+          rewriter.getIntegerAttr(rhs.getType(), value -1));
         MulIOp newMul = rewriter.create<MulIOp>(op.getLoc(), lhs, newConstant);
         AddIOp newAdd = rewriter.create<AddIOp>(op.getLoc(), newMul, lhs);
 
@@ -79,11 +84,15 @@ namespace mlir {
       }
     };
 
-    void MulToAddPass::runOnOperation() {
-      mlir::RewritePatternSet patterns(&getContext());
-      patterns.add<PowerOfTwoExpand>(&getContext());
-      patterns.add<PeelFromMul>(&getContext());
-      (void)applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
-    }
+    struct MulToAdd : impl::MulToAddBase<MulToAdd> {
+      using MulToAddBase::MulToAddBase;
+
+      void runOnOperation() {
+        mlir::RewritePatternSet patterns(&getContext());
+        patterns.add<PowerOfTwoExpand>(&getContext());
+        patterns.add<PeelFromMul>(&getContext());
+        (void)applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
+      }
+    };
   } //namespace heir
 } //namespace mlir
