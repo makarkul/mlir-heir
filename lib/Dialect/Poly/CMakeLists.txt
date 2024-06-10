@@ -1,7 +1,9 @@
 # Inlining `add_mlir_dialect(Poly poly)` commands so hat 
 # we can custom name `*.inc` generated files
-set(LLVM_TARGET_DEFINITIONS PolyTypes.td)
+set(LLVM_TARGET_DEFINITIONS PolyOps.td)
 
+mlir_tablegen(PolyOps.h.inc -gen-op-decls)
+mlir_tablegen(PolyOps.cpp.inc -gen-op-defs)
 mlir_tablegen(PolyTypes.h.inc -gen-typedef-decls -typedefs-dialect=poly)
 mlir_tablegen(PolyTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=poly)
 mlir_tablegen(PolyDialect.h.inc -gen-dialect-decls -dialect=poly)
@@ -13,6 +15,7 @@ add_dependencies(mlir-headers MLIRPolyOpsIncGen)
 
 add_mlir_dialect_library(MLIRPoly
   PolyDialect.cpp
+  PolyOps.cpp
 
   ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/lib/Dialect/Poly

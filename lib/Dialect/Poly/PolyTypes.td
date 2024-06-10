@@ -9,7 +9,7 @@ class PolyType<string name, string typeMnemonic> : TypeDef<PolyDialect, name> {
   let mnemonic = typeMnemonic;
 }
 
-def PolyNomial : PolyType<"Polynomial", "poly"> {
+def Polynomial : PolyType<"Polynomial", "poly"> {
   let summary = "A polynomial with u32 coffecients";
 
   let description = [{
