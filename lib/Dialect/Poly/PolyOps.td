@@ -23,4 +23,18 @@ def PolyMulOp : PolyBinOp<"mul"> {
   let summary = "Multiplication operation between polynomials";
 }
 
+def PolyFromTensorOp : Op<PolyDialect, "from_tensor"> {
+  let summary = "Creates a Polynomial from integer coeffecients stored in a tensor";
+  let arguments = (ins TensorOf<[AnyInteger]>:$input);
+  let results = (outs Polynomial:$output);
+  let assemblyFormat = "$input attr-dict `:` type($input) `->` type($output)";
+}
+
+def PolyEvalOp : Op<PolyDialect, "eval"> {
+  let summary = "Evaluates a Polynomial at a given input value";
+  let arguments = (ins Polynomial:$input, AnyInteger:$point);
+  let results = (outs AnyInteger:$output);
+  let assemblyFormat = "$input `,` $point attr-dict `:` `(` type($input) `,` type($point) `)` `->` type($output)";
+}
+
 #endif//LIB_DIALECT_POLY_POLYOPS_TD_
