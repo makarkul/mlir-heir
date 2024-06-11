@@ -6,6 +6,7 @@ set(LIBS
     ${conversion_libs}
     AffineFullUnroll
     MulToAdd
+    MLIRPoly
     MLIROptLib
     )
 
