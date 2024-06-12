@@ -3,6 +3,7 @@
 
 include "PolyDialect.td"
 include "PolyTypes.td"
+include "mlir/IR/BuiltinAttributes.td"
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -42,4 +43,10 @@ def PolyEvalOp : Op<PolyDialect, "eval"> {
   let assemblyFormat = "$input `,` $point attr-dict `:` `(` type($input) `,` type($point) `)` `->` type($output)";
 }
 
+def PolyConstantOp : Op<PolyDialect, "constant", [Pure, ConstantLike]> {
+  let summary = "Define a constant polynomial via an attribute";
+  let arguments = (ins AnyIntElementsAttr:$coeffecients);
+  let results = (outs Polynomial:$output);
+  let assemblyFormat = "$coeffecients attr-dict `:` type($output)";
+}
 #endif//LIB_DIALECT_POLY_POLYOPS_TD_

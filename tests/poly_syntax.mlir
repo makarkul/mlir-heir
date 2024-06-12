@@ -31,6 +31,13 @@ func.func @test_op_syntax(%arg0: !poly.poly<10>, %arg1: !poly.poly<10>) -> !poly
   %8 = poly.add %7, %7 : (tensor<2x!poly.poly<10>>, tensor<2x!poly.poly<10>>) -> tensor<2x!poly.poly<10>>
   // CHECK: poly.add
   %9 = poly.add %7, %4 : (tensor<2x!poly.poly<10>>, !poly.poly<10>) -> tensor<2x!poly.poly<10>>
+
+  // CHECK: poly.constant
+  %10 = poly.constant dense<[2, 3, 4]> : tensor<3xi32> : !poly.poly<10>
+  %11 = poly.constant dense<[2, 3, 4]> : tensor<3xi8> : !poly.poly<10>
+  %12 = poly.constant dense<"0x020304"> : tensor<3xi8> : !poly.poly<10>
+  %13 = poly.constant dense<4> : tensor<100xi32> : !poly.poly<10>
+
   return %4 : !poly.poly<10>  
 
 }
