@@ -6,9 +6,13 @@ include "PolyTypes.td"
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
-class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure]> {
-  let arguments = (ins Polynomial:$lhs, Polynomial:$rhs);
-  let results = (outs Polynomial:$output);
+// Type constraints for poly binop arguments: polys, vectors of polys or
+// tensor of polys.
+def PolyOrContainer : TypeOrContainer<Polynomial, "poly-or-container">;
+
+class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure, ElementwiseMappable]> {
+  let arguments = (ins PolyOrContainer:$lhs, PolyOrContainer:$rhs);
+  let results = (outs PolyOrContainer:$output);
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` type($lhs) `,` type($rhs) `)` `->` type($output)";
 }
 
