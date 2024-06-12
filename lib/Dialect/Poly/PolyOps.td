@@ -4,10 +4,15 @@
 include "PolyDialect.td"
 include "PolyTypes.td"
 include "mlir/IR/OpBase.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
-class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic> {
-  let arguments = (ins Polynomial:$lhs, Polynomial:$rhs);
-  let results = (outs Polynomial:$output);
+// Type constraints for poly binop arguments: polys, vectors of polys or
+// tensor of polys.
+def PolyOrContainer : TypeOrContainer<Polynomial, "poly-or-container">;
+
+class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure, ElementwiseMappable, SameOperandsAndResultElementType]> {
+  let arguments = (ins PolyOrContainer:$lhs, PolyOrContainer:$rhs);
+  let results = (outs PolyOrContainer:$output);
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` type($lhs) `,` type($rhs) `)` `->` type($output)";
 }
 
@@ -23,7 +28,7 @@ def PolyMulOp : PolyBinOp<"mul"> {
   let summary = "Multiplication operation between polynomials";
 }
 
-def PolyFromTensorOp : Op<PolyDialect, "from_tensor"> {
+def PolyFromTensorOp : Op<PolyDialect, "from_tensor", [Pure]> {
   let summary = "Creates a Polynomial from integer coeffecients stored in a tensor";
   let arguments = (ins TensorOf<[AnyInteger]>:$input);
   let results = (outs Polynomial:$output);
