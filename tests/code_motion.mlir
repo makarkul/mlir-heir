@@ -11,7 +11,7 @@ module {
     %p1 = poly.from_tensor %1 : tensor<3xi32> -> !poly.poly<10>
     // CHECK: poly.mul
 
-    // CHECK: affine.from_tensor
+    // CHECK: affine.for
     %ret_val = affine.for %i = 0 to 100 iter_args(%sum_iter = %p0) -> !poly.poly<10> {
       // The poly.mul should be hoisted out of the loop
       // CHECK-NOT: poly.mul
