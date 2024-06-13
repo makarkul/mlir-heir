@@ -14,6 +14,7 @@ def PolyDialect : Dialect {
   let cppNamespace = "::mlir::heir::poly";
 
   let useDefaultTypePrinterParser = 1;
+  let hasConstantMaterializer = 1;
 }
 
 #endif//LIB_DIALECT_POLY_POLYDIALECT_TD_
