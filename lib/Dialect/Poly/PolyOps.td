@@ -39,7 +39,7 @@ def PolyFromTensorOp : Op<PolyDialect, "from_tensor", [Pure]> {
   let hasFolder = 1;
 }
 
-def PolyEvalOp : Op<PolyDialect, "eval"> {
+def PolyEvalOp : Op<PolyDialect, "eval", [AllTypesMatch<["point", "output"]>]> {
   let summary = "Evaluates a Polynomial at a given input value";
   let arguments = (ins Polynomial:$input, AnyInteger:$point);
   let results = (outs AnyInteger:$output);
