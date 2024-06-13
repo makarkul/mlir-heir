@@ -14,7 +14,7 @@ def PolyOrContainer : TypeOrContainer<Polynomial, "poly-or-container">;
 class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure, ElementwiseMappable, SameOperandsAndResultElementType]> {
   let arguments = (ins PolyOrContainer:$lhs, PolyOrContainer:$rhs);
   let results = (outs PolyOrContainer:$output);
-  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` type($lhs) `,` type($rhs) `)` `->` type($output)";
+  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` qualified(type($lhs)) `,` qualified(type($rhs)) `)` `->` qualified(type($output))";
   let hasFolder = 1;
 }
 
@@ -34,7 +34,7 @@ def PolyFromTensorOp : Op<PolyDialect, "from_tensor", [Pure]> {
   let summary = "Creates a Polynomial from integer coeffecients stored in a tensor";
   let arguments = (ins TensorOf<[AnyInteger]>:$input);
   let results = (outs Polynomial:$output);
-  let assemblyFormat = "$input attr-dict `:` type($input) `->` type($output)";
+  let assemblyFormat = "$input attr-dict `:` type($input) `->` qualified(type($output))";
   let hasFolder = 1;
 }
 
@@ -42,14 +42,14 @@ def PolyEvalOp : Op<PolyDialect, "eval"> {
   let summary = "Evaluates a Polynomial at a given input value";
   let arguments = (ins Polynomial:$input, AnyInteger:$point);
   let results = (outs AnyInteger:$output);
-  let assemblyFormat = "$input `,` $point attr-dict `:` `(` type($input) `,` type($point) `)` `->` type($output)";
+  let assemblyFormat = "$input `,` $point attr-dict `:` `(` qualified(type($input)) `,` type($point) `)` `->` type($output)";
 }
 
 def PolyConstantOp : Op<PolyDialect, "constant", [Pure, ConstantLike]> {
   let summary = "Define a constant polynomial via an attribute";
   let arguments = (ins AnyIntElementsAttr:$coeffecients);
   let results = (outs Polynomial:$output);
-  let assemblyFormat = "$coeffecients attr-dict `:` type($output)";
+  let assemblyFormat = "$coeffecients attr-dict `:` qualified(type($output))";
   let hasFolder = 1;
 }
 #endif//LIB_DIALECT_POLY_POLYOPS_TD_
