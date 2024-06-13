@@ -65,6 +65,12 @@ namespace mlir {
         // Returns null if the cast failed, which corresponds to a failed fold.
         return dyn_cast<DenseIntElementsAttr>(adaptor.getInput());
       }
+      
+      LogicalResult PolyEvalOp::verify() {
+        return getPoint().getType().isSignlessInteger(32)
+                  ? success()
+                  : emitOpError("argument point must be a 32-bit integer");
+      }
     } //namespace poly
   } // namespace heir
 } // namespace mlir

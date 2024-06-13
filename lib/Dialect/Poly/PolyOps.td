@@ -44,6 +44,7 @@ def PolyEvalOp : Op<PolyDialect, "eval", [AllTypesMatch<["point", "output"]>]> {
   let arguments = (ins Polynomial:$input, AnyInteger:$point);
   let results = (outs AnyInteger:$output);
   let assemblyFormat = "$input `,` $point attr-dict `:` `(` qualified(type($input)) `,` type($point) `)` `->` type($output)";
+  let hasVerifier = 1;
 }
 
 def PolyConstantOp : Op<PolyDialect, "constant", [Pure, ConstantLike]> {
