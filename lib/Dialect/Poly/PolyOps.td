@@ -15,6 +15,7 @@ class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure, ElementwiseM
   let arguments = (ins PolyOrContainer:$lhs, PolyOrContainer:$rhs);
   let results = (outs PolyOrContainer:$output);
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` type($lhs) `,` type($rhs) `)` `->` type($output)";
+  let hasFolder = 1;
 }
 
 def PolyAddOp : PolyBinOp<"add"> {
