@@ -60,6 +60,11 @@ namespace mlir {
                                 IntegerType::get(getContext(), 32)),
           result);
       }
+
+      OpFoldResult PolyFromTensorOp::fold(PolyFromTensorOp::FoldAdaptor adaptor) {
+        // Returns null if the cast failed, which corresponds to a failed fold.
+        return dyn_cast<DenseIntElementsAttr>(adaptor.getInput());
+      }
     } //namespace poly
   } // namespace heir
 } // namespace mlir
