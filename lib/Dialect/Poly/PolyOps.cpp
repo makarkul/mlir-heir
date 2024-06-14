@@ -1,6 +1,10 @@
 #include "lib/Dialect/Poly/PolyOps.h"
 #include "mlir/Dialect/CommonFolders.h"
+#include "mlir/Dialect/Complex/IR/Complex.h"
 #include "mlir/IR/PatternMatch.h"
+
+// Required after PatternMatch.h
+#include "lib/Dialect/Poly/PolyCanonicalize.cpp.inc"
 
 namespace mlir {
   namespace heir {
@@ -131,6 +135,10 @@ namespace mlir {
       void PolyMulOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
             ::mlir::MLIRContext *context) {}
 
+      void PolyEvalOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {
+        populateWithGenerated(results);
+      }
     } //namespace poly
   } // namespace heir
 } // namespace mlir
