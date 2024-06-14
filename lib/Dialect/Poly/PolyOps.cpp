@@ -79,10 +79,15 @@ namespace mlir {
                                                             "integer or a complex number");
       }
 
+      /*
+
       // Rewrites (x^2 - y^2) = (x+y)(x-y) if x^2 and y^2 have no other uses
       struct DifferenceOfSquares : public  OpRewritePattern<PolySubOp> {
         DifferenceOfSquares(mlir::MLIRContext *context)
-          : OpRewritePattern<PolySubOp>(context, /*benifit=*/1) {}
+          : OpRewritePattern<PolySubOp>(context, 
+                                       //benifit=
+                                        1 
+                                        ) {}
 
         LogicalResult matchAndRewrite(PolySubOp op,
                                       PatternRewriter &rewriter) const override {
@@ -122,6 +127,7 @@ namespace mlir {
           return success();
         }
       };
+       */
 
       void PolyAddOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
             ::mlir::MLIRContext *context) {}
@@ -137,7 +143,7 @@ namespace mlir {
 
       void PolyEvalOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
             ::mlir::MLIRContext *context) {
-        populateWithGenerated(results);
+        results.add<LiftConjThroughEval>(context);
       }
     } //namespace poly
   } // namespace heir
