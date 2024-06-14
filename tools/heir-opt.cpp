@@ -1,5 +1,6 @@
 #include "lib/Transform/Affine/Passes.h"
 #include "lib/Transform/Arith/Passes.h"
+#include "lib/Conversion/PolyToStandard/PolyToStandard.h"
 #include "lib/Dialect/Poly/PolyDialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -17,6 +18,9 @@ int main(int argc, char **argv) {
 
   mlir::heir::registerAffinePasses();
   mlir::heir::registerArithPasses();
+
+  // Dialect conversion passes
+  mlir::heir::poly::registerPolyToStandardPasses();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "HEIR Pass Driver", registry)
