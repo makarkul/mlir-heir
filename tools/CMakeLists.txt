@@ -7,7 +7,6 @@ set(LIBS
     AffineFullUnroll
     MulToAdd
     MLIRPoly
-    PolyToStandard
     MLIROptLib
     )
 
