@@ -71,6 +71,16 @@ namespace mlir {
                   ? success()
                   : emitOpError("argument point must be a 32-bit integer");
       }
+
+      void PolyAddOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {}
+
+      void PolySubOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {}
+
+      void PolyMulOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {}
+
     } //namespace poly
   } // namespace heir
 } // namespace mlir
