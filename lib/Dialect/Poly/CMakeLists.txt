@@ -10,8 +10,12 @@ mlir_tablegen(PolyDialect.h.inc -gen-dialect-decls -dialect=poly)
 mlir_tablegen(PolyDialect.cpp.inc -gen-dialect-defs -dialect=poly)
 
 add_public_tablegen_target(MLIRPolyOpsIncGen)
-
 add_dependencies(mlir-headers MLIRPolyOpsIncGen)
+
+set(LLVM_TARGET_DEFINITIONS PolyPatterns.td)
+mlir_tablegen(PolyCanonicalize.cpp.inc -gen-rewriters)
+add_public_tablegen_target(MLIRPolyCanonicalizationIncGen)
+
 
 add_mlir_dialect_library(MLIRPoly
   PolyDialect.cpp

@@ -22,6 +22,7 @@ class PolyBinOp<string mnemonic> : Op<PolyDialect, mnemonic, [Pure, ElementwiseM
   let results = (outs PolyOrContainer:$output);
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` qualified(type($output))";
   let hasFolder = 1;
+  let hasCanonicalizer = 1;
 }
 
 def PolyAddOp : PolyBinOp<"add"> {
@@ -44,12 +45,15 @@ def PolyFromTensorOp : Op<PolyDialect, "from_tensor", [Pure]> {
   let hasFolder = 1;
 }
 
+def IntOrComplex : AnyTypeOf<[AnyInteger, AnyComplex]>;
+
 def PolyEvalOp : Op<PolyDialect, "eval", [AllTypesMatch<["point", "output"]>, Has32BitArguments]> {
   let summary = "Evaluates a Polynomial at a given input value";
-  let arguments = (ins Polynomial:$input, AnyInteger:$point);
-  let results = (outs AnyInteger:$output);
+  let arguments = (ins Polynomial:$input, IntOrComplex:$point);
+  let results = (outs IntOrComplex:$output);
   let assemblyFormat = "$input `,` $point attr-dict `:` `(` qualified(type($input)) `,` type($point) `)` `->` type($output)";
   let hasVerifier = 1;
+  let hasCanonicalizer = 1;
 }
 
 def PolyConstantOp : Op<PolyDialect, "constant", [Pure, ConstantLike]> {

@@ -1,6 +1,10 @@
 #include "lib/Dialect/Poly/PolyOps.h"
 #include "mlir/Dialect/CommonFolders.h"
-#include "llvm/Support/Debug.h"
+#include "mlir/Dialect/Complex/IR/Complex.h"
+#include "mlir/IR/PatternMatch.h"
+
+// Required after PatternMatch.h
+#include "lib/Dialect/Poly/PolyCanonicalize.cpp.inc"
 
 namespace mlir {
   namespace heir {
@@ -27,8 +31,8 @@ namespace mlir {
       }
 
       OpFoldResult PolyMulOp::fold(PolyMulOp::FoldAdaptor adaptor) {
-        auto lhs = dyn_cast<DenseIntElementsAttr>(adaptor.getOperands()[0]);
-        auto rhs = dyn_cast<DenseIntElementsAttr>(adaptor.getOperands()[1]);
+        auto lhs = dyn_cast_or_null<DenseIntElementsAttr>(adaptor.getOperands()[0]);
+        auto rhs = dyn_cast_or_null<DenseIntElementsAttr>(adaptor.getOperands()[1]);
 
         if (!rhs || !lhs) {
           return nullptr;
@@ -63,13 +67,77 @@ namespace mlir {
 
       OpFoldResult PolyFromTensorOp::fold(PolyFromTensorOp::FoldAdaptor adaptor) {
         // Returns null if the cast failed, which corresponds to a failed fold.
-        return dyn_cast<DenseIntElementsAttr>(adaptor.getInput());
+        return dyn_cast_or_null<DenseIntElementsAttr>(adaptor.getInput());
       }
       
       LogicalResult PolyEvalOp::verify() {
-        return getPoint().getType().isSignlessInteger(32)
-                  ? success()
-                  : emitOpError("argument point must be a 32-bit integer");
+        auto pointTy = getPoint().getType();
+        bool isSignlessInteger = pointTy.isSignlessInteger(32);
+        auto complexPt = llvm::dyn_cast<ComplexType>(pointTy);
+        return isSignlessInteger || complexPt ? success()
+                                              : emitOpError("argument point must be a 32-bit "
+                                                            "integer or a complex number");
+      }
+
+      // Rewrites (x^2 - y^2) = (x+y)(x-y) if x^2 and y^2 have no other uses
+      struct DifferenceOfSquares : public  OpRewritePattern<PolySubOp> {
+        DifferenceOfSquares(mlir::MLIRContext *context)
+          : OpRewritePattern<PolySubOp>(context, /*benifit=*/1) {}
+
+        LogicalResult matchAndRewrite(PolySubOp op,
+                                      PatternRewriter &rewriter) const override {
+          Value lhs = op.getOperand(0);
+          Value rhs = op.getOperand(1);
+
+          // If either arg has another use, then this rewrite is probably less 
+          // efficient, becuase it cannot delete the mul ops
+          if (!lhs.hasOneUse() || !rhs.hasOneUse()) {
+            return failure();
+          }
+
+          auto rhsMul = rhs.getDefiningOp<PolyMulOp>();
+          auto lhsMul = lhs.getDefiningOp<PolyMulOp>();
+          if (!lhsMul || !rhsMul) {
+            return failure();
+          }
+
+          bool rhsMulOpsAgree = rhsMul.getLhs() == rhsMul.getRhs();
+          bool lhsMulOpsAgree = lhsMul.getLhs() == lhsMul.getRhs();
+
+          if (!rhsMulOpsAgree || !lhsMulOpsAgree) {
+            return failure();
+          }
+
+          auto x = lhsMul.getLhs();
+          auto y = rhsMul.getLhs();
+
+          PolyAddOp newAdd = rewriter.create<PolyAddOp>(op.getLoc(), x, y);
+          PolySubOp newSub = rewriter.create<PolySubOp>(op.getLoc(), x, y);
+          PolyMulOp newMul = rewriter.create<PolyMulOp>(op.getLoc(), newAdd, newSub);
+
+          rewriter.replaceOp(op, newMul);
+          // We don't need to remove the origin ops because MLIR already has
+          // canonicalizaton patterns that remove unused ops.
+
+          return success();
+        }
+      };
+
+      void PolyAddOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {}
+
+      void PolySubOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {
+
+        results.add<DifferenceOfSquares>(context);
+      }
+
+      void PolyMulOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {}
+
+      void PolyEvalOp::getCanonicalizationPatterns(::mlir::RewritePatternSet &results,
+            ::mlir::MLIRContext *context) {
+        populateWithGenerated(results);
       }
     } //namespace poly
   } // namespace heir
