@@ -11,6 +11,26 @@ namespace mlir {
 #define GEN_PASS_DEF_POLYTOSTANDARD
 #include "lib/Conversion/PolyToStandard/PolyToStandard.h.inc"
 
+      class PolyToStandardTypeConvertor : public TypeConverter {
+      public:
+        PolyToStandardTypeConvertor(MLIRContext *ctx) {
+          addConversion([](Type type) {return type; });
+          addConversion([ctx](PolynomialType type) -> Type {
+            int degreeBound = type.getDegreeBound();
+            IntegerType elementTy = 
+              IntegerType::get(ctx, 32, IntegerType::SignednessSemantics::Signless);
+            return RankedTensorType::get({degreeBound}, elementTy);
+          });
+
+          // We don't include any custom materialization hooks because this lowering 
+          // is all done in a single pass. The dialect conversion framework works by 
+          // resolving intermediate (mid-pass) type conflicts by inserting 
+          // unrealized_conversion_cast ops, and only converting those to custom
+          // materializations if they persis at the end of the pass. In our case,
+          // we'd only need to use custom materializations if we split this lowering
+          // across multiple passes.
+        }
+      };
       struct PolyToStandard : impl::PolyToStandardBase<PolyToStandard> {
         using PolyToStandardBase::PolyToStandardBase;
 
