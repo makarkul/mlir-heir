@@ -41,7 +41,10 @@ namespace mlir {
         LogicalResult matchAndRewrite(
           PolyAddOp op, OpAdaptor adaptor,
           ConversionPatternRewriter &rewriter) const override {
-            //TODO: implement
+            arith::AddIOp addOp = rewriter.create<arith::AddIOp>(
+              op.getLoc(), adaptor.getLhs(), adaptor.getRhs());
+              
+            rewriter.replaceOp(op.getOperation(), addOp);
             return success();
           }
       };
