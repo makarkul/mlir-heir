@@ -1,5 +1,5 @@
 #ifndef LIB_DIALECT_POLY_POLYOPS_H_
-#define LIB_DIALECT_POLY_POLYOPS_H
+#define LIB_DIALECT_POLY_POLYOPS_H_
 
 #include "lib/Dialect/Poly/PolyDialect.h"
 #include "lib/Dialect/Poly/PolyTraits.h"

@@ -1,4 +1,4 @@
-// RUN: heir-op --poly-to-standard %s | FileCheck %s
+// RUN: heir-opt --poly-to-standard %s | FileCheck %s
 
 // CHECK-LABEL: test_lower_add
 func.func @test_lower_add(%0 : !poly.poly<10>, %1 : !poly.poly<10>) -> !poly.poly<10> {

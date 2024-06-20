@@ -66,32 +66,31 @@ namespace mlir {
           PolyToStandardTypeConvertor typeConvertor(context);
           patterns.add<ConvertAdd>(typeConvertor, context);
 
-          /*
-          populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp op>(
-            patterns, typeConverter);
+          populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
+            patterns, typeConvertor);
           target.addDynamicallyLegalOp<func::FuncOp>([&](func::FuncOp op) {
-            return typeConverter.isSignatureLegal(&op.getBody());
+            return typeConvertor.isSignatureLegal(op.getFunctionType()) &&
+	    		typeConvertor.isLegal(&op.getBody());
           });
-           */
 
-          populateReturnOpTypeConversionPattern(patterns, typeConverter);
+          populateReturnOpTypeConversionPattern(patterns, typeConvertor);
           target.addDynamicallyLegalOp<func::ReturnOp>(
-            [&](func::ReturnOp op) { return typeConverter.isLegal(op); 
+            [&](func::ReturnOp op) { return typeConvertor.isLegal(op); 
             }
           );
-          /*
-          populateCallOpTypeConversionPattern(patterns, typeConverter);
+          
+          populateCallOpTypeConversionPattern(patterns, typeConvertor);
           target.addDynamicallyLegalOp<func::CallOp>(
-              [&](func::CallOp op) { return typeConverter.isLegal(op); });
+              [&](func::CallOp op) { return typeConvertor.isLegal(op); });
 
-          populateBranchOpInterfaceTypeConversionPattern(patterns, typeConverter);
+          populateBranchOpInterfaceTypeConversionPattern(patterns, typeConvertor);
           target.markUnknownOpDynamicallyLegal([&](Operation *op) {
             return isNotBranchOpInterfaceOrReturnLikeOp(op) ||
                   isLegalForBranchOpInterfaceTypeConversionPattern(op,
-                                                                    typeConverter) ||
-                  isLegalForReturnOpTypeConversionPattern(op, typeConverter);
+                                                                    typeConvertor) ||
+                  isLegalForReturnOpTypeConversionPattern(op, typeConvertor);
           });
-           */
+           
           if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
             signalPassFailure();
           }
