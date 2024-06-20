@@ -2,6 +2,8 @@
 
 #include "lib/Dialect/Poly/PolyOps.h"
 #include "lib/Dialect/Poly/PolyTypes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
@@ -43,7 +45,7 @@ namespace mlir {
           ConversionPatternRewriter &rewriter) const override {
             arith::AddIOp addOp = rewriter.create<arith::AddIOp>(
               op.getLoc(), adaptor.getLhs(), adaptor.getRhs());
-              
+
             rewriter.replaceOp(op.getOperation(), addOp);
             return success();
           }
@@ -64,6 +66,32 @@ namespace mlir {
           PolyToStandardTypeConvertor typeConvertor(context);
           patterns.add<ConvertAdd>(typeConvertor, context);
 
+          /*
+          populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp op>(
+            patterns, typeConverter);
+          target.addDynamicallyLegalOp<func::FuncOp>([&](func::FuncOp op) {
+            return typeConverter.isSignatureLegal(&op.getBody());
+          });
+           */
+
+          populateReturnOpTypeConversionPattern(patterns, typeConverter);
+          target.addDynamicallyLegalOp<func::ReturnOp>(
+            [&](func::ReturnOp op) { return typeConverter.isLegal(op); 
+            }
+          );
+          /*
+          populateCallOpTypeConversionPattern(patterns, typeConverter);
+          target.addDynamicallyLegalOp<func::CallOp>(
+              [&](func::CallOp op) { return typeConverter.isLegal(op); });
+
+          populateBranchOpInterfaceTypeConversionPattern(patterns, typeConverter);
+          target.markUnknownOpDynamicallyLegal([&](Operation *op) {
+            return isNotBranchOpInterfaceOrReturnLikeOp(op) ||
+                  isLegalForBranchOpInterfaceTypeConversionPattern(op,
+                                                                    typeConverter) ||
+                  isLegalForReturnOpTypeConversionPattern(op, typeConverter);
+          });
+           */
           if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
             signalPassFailure();
           }
