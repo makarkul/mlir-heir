@@ -120,6 +120,24 @@ namespace mlir {
         }
       };
 
+      struct ConvertConstant : public OpConversionPattern<PolyConstantOp> {
+        ConvertConstant(mlir::MLIRContext *context)
+          : OpConversionPattern<PolyConstantOp>(context) {}
+
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+            PolyConstantOp op, OpAdaptor adaptor,
+            ConversionPatternRewriter &rewriter) const override {
+          ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+          auto constOp = b.create<arith::ConstantOp>(adaptor.getCoeffecients());
+          auto fromTensorOp = 
+              b.create<PolyFromTensorOp>(op.getResult().getType(), constOp);
+          rewriter.replaceOp(op, fromTensorOp.getResult());
+          return success();
+        }
+      };
+
       struct PolyToStandard : impl::PolyToStandardBase<PolyToStandard> {
         using PolyToStandardBase::PolyToStandardBase;
 
@@ -133,7 +151,7 @@ namespace mlir {
 
           RewritePatternSet patterns(context);
           PolyToStandardTypeConvertor typeConvertor(context);
-          patterns.add<ConvertAdd, ConvertSub, ConvertFromTensor, ConvertToTensor>(
+          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertFromTensor, ConvertToTensor>(
             typeConvertor, context);
 
           populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
