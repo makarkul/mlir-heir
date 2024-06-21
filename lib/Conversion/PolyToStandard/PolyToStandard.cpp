@@ -2,8 +2,10 @@
 
 #include "lib/Dialect/Poly/PolyOps.h"
 #include "lib/Dialect/Poly/PolyTypes.h"
+#include "llvm/ADT/SmallVector.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
@@ -51,6 +53,73 @@ namespace mlir {
           }
       };
 
+      struct ConvertSub : public OpConversionPattern<PolySubOp> {
+        ConvertSub(mlir::MLIRContext *context) 
+          : OpConversionPattern<PolySubOp>(context) {}
+
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+          PolySubOp op, OpAdaptor adaptor,
+          ConversionPatternRewriter &rewriter) const override {
+            arith::SubIOp subOp = rewriter.create<arith::SubIOp>(
+              op.getLoc(), adaptor.getLhs(), adaptor.getRhs());
+            rewriter.replaceOp(op.getOperation(), subOp);
+            return success();
+          }
+      };
+
+      struct ConvertFromTensor : public OpConversionPattern<PolyFromTensorOp> {
+        ConvertFromTensor(mlir::MLIRContext *context)
+          : OpConversionPattern<PolyFromTensorOp>(context) {}
+        
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+          PolyFromTensorOp op, OpAdaptor adaptor,
+          ConversionPatternRewriter &rewriter) const override {
+            auto resultTensorTy = cast<RankedTensorType>(
+              typeConverter->convertType(op->getResultTypes()[0])
+            );
+            auto resultShape = resultTensorTy.getShape()[0];
+            auto resultEltTy =resultTensorTy.getElementType();
+
+            auto inputTensorTy = op.getInput().getType();
+            auto inputShape = inputTensorTy.getShape()[0];
+
+            // Zero pad the tensor if the coffecients' size is less than the polynomial
+            // degree
+            ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+            auto coeffValue = adaptor.getInput();
+            if (inputShape < resultShape) {
+              SmallVector<OpFoldResult, 1> low, high;
+              low.push_back(rewriter.getIndexAttr(0));
+              high.push_back(rewriter.getIndexAttr(resultShape - inputShape));
+              coeffValue = b.create<tensor::PadOp>(
+                resultTensorTy, coeffValue, low, high,
+                b.create<arith::ConstantOp>
+                (rewriter.getIntegerAttr(resultEltTy, 0)),
+              /*nofold=*/false);
+            }
+            rewriter.replaceOp(op, coeffValue);
+            return success();
+          }
+      };
+
+      struct ConvertToTensor : public OpConversionPattern<PolyToTensorOp> {
+        ConvertToTensor(mlir::MLIRContext *context) 
+          : OpConversionPattern<PolyToTensorOp>(context) {}
+        
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+            PolyToTensorOp op, OpAdaptor adaptor,
+            ConversionPatternRewriter &rewriter) const override {
+          rewriter.replaceOp(op, adaptor.getInput());
+          return success();
+        }
+      };
+
       struct PolyToStandard : impl::PolyToStandardBase<PolyToStandard> {
         using PolyToStandardBase::PolyToStandardBase;
 
@@ -64,7 +133,8 @@ namespace mlir {
 
           RewritePatternSet patterns(context);
           PolyToStandardTypeConvertor typeConvertor(context);
-          patterns.add<ConvertAdd>(typeConvertor, context);
+          patterns.add<ConvertAdd, ConvertSub, ConvertFromTensor, ConvertToTensor>(
+            typeConvertor, context);
 
           populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
             patterns, typeConvertor);
