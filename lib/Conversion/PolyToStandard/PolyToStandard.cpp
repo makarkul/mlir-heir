@@ -176,6 +176,55 @@ namespace mlir {
         }
       };
 
+      struct ConvertEval : public OpConversionPattern<PolyEvalOp> {
+        ConvertEval(mlir::MLIRContext *context)
+            : OpConversionPattern<PolyEvalOp>(context) {}
+
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+            PolyEvalOp op, OpAdaptor adaptor,
+            ConversionPatternRewriter &rewriter) const override {
+          auto polyTensorType =
+              cast<RankedTensorType>(adaptor.getPolynomial().getType());
+          auto numTerms = polyTensorType.getShape()[0];
+          ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+          auto lowerBound =
+              b.create<arith::ConstantOp>(b.getIndexType(), b.getIndexAttr(1));
+          auto numTermsOp = b.create<arith::ConstantOp>(b.getIndexType(),
+                                                        b.getIndexAttr(numTerms + 1));
+          auto step = lowerBound;
+
+          auto poly = adaptor.getPolynomial();
+          auto point = adaptor.getPoint();
+
+          // Horner's method:
+          // 
+          // accum = 0
+          // for i = 1, 2, ..., N
+          //    accum = point * accum + coeff[N - i]
+          auto accum =
+            b.create<arith::ConstantOp>(b.getI32Type(), b.getI32IntegerAttr(0));
+          auto loop = b.create<scf::ForOp>(
+              lowerBound, numTermsOp, step, accum.getResult(),
+              [&](OpBuilder &builder, Location loc, Value loopIndex,
+                ValueRange loopState) {
+
+              ImplicitLocOpBuilder b(op.getLoc(), builder);
+              auto accum = loopState.front();
+              auto coeffIndex = b.create<arith::SubIOp>(numTermsOp, loopIndex);
+              auto mulOp = b.create<arith::MulIOp>(point, accum);
+              auto result = b.create<arith::AddIOp>(
+                  mulOp, b.create<tensor::ExtractOp>(poly, coeffIndex.getResult()));
+              b.create<scf::YieldOp>(result.getResult());
+            });
+
+          rewriter.replaceOp(op, loop.getResult(0));
+          return success();
+        }
+      };
+
       struct ConvertToTensor : public OpConversionPattern<PolyToTensorOp> {
         ConvertToTensor(mlir::MLIRContext *context) 
           : OpConversionPattern<PolyToTensorOp>(context) {}
@@ -221,8 +270,8 @@ namespace mlir {
 
           RewritePatternSet patterns(context);
           PolyToStandardTypeConvertor typeConvertor(context);
-          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertMul, 
-            ConvertFromTensor, ConvertToTensor>(typeConvertor, context);
+          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertEval, 
+            ConvertMul, ConvertFromTensor, ConvertToTensor>(typeConvertor, context);
 
           populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
             patterns, typeConvertor);
