@@ -27,16 +27,13 @@ namespace mlir {
             return RankedTensorType::get({degreeBound}, elementTy);
           });
 
-          // Convert from a tensor type to a poly type: use from_tensor
-          addSourceMaterialization([](OpBuilder &builder, Type type,
-                                      ValueRange inputs, Location loc) -> Value {
-            return builder.create<poly::PolyFromTensorOp>(loc, type, inputs[0]);
-          });
-          // Convert from a tensor type to a poly type: use to_tensor
-          addSourceMaterialization([](OpBuilder &builder, Type type,
-                                      ValueRange inputs, Location loc) -> Value {
-            return builder.create<poly::PolyToTensorOp>(loc, type, inputs[0]);
-          });
+          // We don't include any custom materialization hooks because this lowering 
+          // is all done in a single pass. The dialect conversion framework works by 
+          // resolving intermediate (mid-pass) type conflicts by inserting 
+          // unrealized_conversion_cast ops, and only converting those to custom
+          // materializations if they persis at the end of the pass. In our case,
+          // we'd only need to use custom materializations if we split this lowering
+          // across multiple passes.
         }
       };
 
@@ -53,6 +50,22 @@ namespace mlir {
               op.getLoc(), adaptor.getLhs(), adaptor.getRhs());
 
             rewriter.replaceOp(op.getOperation(), addOp);
+            return success();
+          }
+      };
+
+      struct ConvertSub : public OpConversionPattern<PolySubOp> {
+        ConvertSub(mlir::MLIRContext *context) 
+          : OpConversionPattern<PolySubOp>(context) {}
+
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+          PolySubOp op, OpAdaptor adaptor,
+          ConversionPatternRewriter &rewriter) const override {
+            arith::SubIOp subOp = rewriter.create<arith::SubIOp>(
+              op.getLoc(), adaptor.getLhs(), adaptor.getRhs());
+            rewriter.replaceOp(op.getOperation(), subOp);
             return success();
           }
       };
@@ -253,13 +266,12 @@ namespace mlir {
 
           ConversionTarget target(*context);
           target.addLegalDialect<arith::ArithDialect>();
-          target.addIllegalOp<PolyAddOp, PolyMulOp, PolyEvalOp, PolyConstantOp, 
-            PolyFromTensorOp, PolyToTensorOp>();
+          target.addIllegalDialect<PolyDialect>();
 
           RewritePatternSet patterns(context);
           PolyToStandardTypeConvertor typeConvertor(context);
-          patterns.add<ConvertAdd, ConvertConstant, ConvertEval, ConvertMul, 
-             ConvertFromTensor, ConvertToTensor>(typeConvertor, context);
+          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertEval, 
+            ConvertMul, ConvertFromTensor, ConvertToTensor>(typeConvertor, context);
 
           populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
             patterns, typeConvertor);
