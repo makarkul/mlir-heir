@@ -3,6 +3,7 @@
 #include "lib/Dialect/Poly/PolyOps.h"
 #include "lib/Dialect/Poly/PolyTypes.h"
 #include "llvm/ADT/SmallVector.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
@@ -106,6 +107,75 @@ namespace mlir {
           }
       };
 
+      struct ConvertMul : public OpConversionPattern<PolyMulOp> {
+        ConvertMul(mlir::MLIRContext *context)
+            : OpConversionPattern<PolyMulOp>(context) {}
+
+        using OpConversionPattern::OpConversionPattern;
+
+        LogicalResult matchAndRewrite(
+              PolyMulOp op, OpAdaptor adaptor,
+              ConversionPatternRewriter &rewriter) const override {
+          auto polymulTensorType = cast<RankedTensorType>(adaptor.getLhs().getType());
+          auto numTerms = polymulTensorType.getShape()[0];
+          ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+          // Create an all-zeros tensor to store the result
+          auto polymulResult = b.create<arith::ConstantOp>(
+            polymulTensorType, DenseElementsAttr::get(polymulTensorType, 0)
+          );
+
+          // Loop bounds and step
+          auto lowerBound =
+              b.create<arith::ConstantOp>(b.getIndexType(), b.getIndexAttr(0));
+          auto numTermsOp =
+              b.create<arith::ConstantOp>(b.getIndexType(), b.getIndexAttr(numTerms));
+          auto step =
+              b.create<arith::ConstantOp>(b.getIndexType(), b.getIndexAttr(1));
+
+          auto p0 = adaptor.getLhs();
+          auto p1 = adaptor.getRhs();
+
+          // for i = 0, ..., N-1
+          //   for j = 0, ..., N-1
+          //      product[i+j (mod N)] += p0[i] * p1[j]
+          auto outerloop = b.create<scf::ForOp>(
+            lowerBound, numTermsOp, step, ValueRange(polymulResult.getResult()),
+            [&](OpBuilder &builder, Location loc, Value p0Index,
+                ValueRange loopState) {
+                  ImplicitLocOpBuilder b(op.getLoc(), builder);
+                  
+              auto innerLoop = b.create<scf::ForOp>(
+                lowerBound, numTermsOp, step, loopState,
+                [&](OpBuilder &builder, Location loc, Value p1Index,
+                    ValueRange loopState) {
+                  ImplicitLocOpBuilder b(op.getLoc(), builder);
+                  auto accumTensor = loopState.front();
+                  auto destIndex = b.create<arith::RemUIOp>(
+                    b.create<arith::AddIOp>(p0Index, p1Index), numTermsOp
+                  );
+                  auto mulOp = b.create<arith::MulIOp>(
+                    b.create<tensor::ExtractOp>(p0, ValueRange(p0Index)),
+                    b.create<tensor::ExtractOp>(p1, ValueRange(p1Index))
+                  );
+                  auto result = b.create<arith::AddIOp>(
+                    mulOp, b.create<tensor::ExtractOp>(accumTensor,
+                                                        destIndex.getResult())
+                  );
+                  auto stored = b.create<tensor::InsertOp>(result, accumTensor,
+                                                            destIndex.getResult()
+                  );
+                  b.create<scf::YieldOp>(stored.getResult());
+                }
+              );
+              b.create<scf::YieldOp>(innerLoop.getResults());
+            }
+          );
+          rewriter.replaceOp(op, outerloop.getResult(0));
+          return success();
+        }
+      };
+
       struct ConvertToTensor : public OpConversionPattern<PolyToTensorOp> {
         ConvertToTensor(mlir::MLIRContext *context) 
           : OpConversionPattern<PolyToTensorOp>(context) {}
@@ -151,8 +221,8 @@ namespace mlir {
 
           RewritePatternSet patterns(context);
           PolyToStandardTypeConvertor typeConvertor(context);
-          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertFromTensor, ConvertToTensor>(
-            typeConvertor, context);
+          patterns.add<ConvertAdd, ConvertConstant, ConvertSub, ConvertMul, 
+            ConvertFromTensor, ConvertToTensor>(typeConvertor, context);
 
           populateFunctionOpInterfaceTypeConversionPattern<func::FuncOp>(
             patterns, typeConvertor);
