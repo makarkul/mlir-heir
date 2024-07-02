@@ -45,13 +45,20 @@ def PolyFromTensorOp : Op<PolyDialect, "from_tensor", [Pure]> {
   let hasFolder = 1;
 }
 
+def PolyToTensorOp : Op<PolyDialect, "to_tensor", [Pure]> {
+  let summary = "Converts a polynomial to a tensor of it's integer coeffecients";
+  let arguments = (ins Polynomial:$input);
+  let results = (outs TensorOf<[AnyInteger]>:$output);
+  let assemblyFormat = "$input attr-dict `:` qualified(type($input)) `->` type($output)";
+}
+
 def IntOrComplex : AnyTypeOf<[AnyInteger, AnyComplex]>;
 
 def PolyEvalOp : Op<PolyDialect, "eval", [AllTypesMatch<["point", "output"]>, Has32BitArguments]> {
   let summary = "Evaluates a Polynomial at a given input value";
-  let arguments = (ins Polynomial:$input, IntOrComplex:$point);
+  let arguments = (ins Polynomial:$polynomial, IntOrComplex:$point);
   let results = (outs IntOrComplex:$output);
-  let assemblyFormat = "$input `,` $point attr-dict `:` `(` qualified(type($input)) `,` type($point) `)` `->` type($output)";
+  let assemblyFormat = "$polynomial `,` $point attr-dict `:` `(` qualified(type($polynomial)) `,` type($point) `)` `->` type($output)";
   let hasVerifier = 1;
   let hasCanonicalizer = 1;
 }
