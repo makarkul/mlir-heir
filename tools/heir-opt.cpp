@@ -8,11 +8,14 @@
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include "mlir/Transforms/Passes.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 
 void polyToLLVMPipelineBuilder(mlir::OpPassManager &manager) {
   // Poly
   manager.addPass(mlir::heir::poly::createPolyToStandard());
   manager.addPass(mlir::createCanonicalizerPass());
+
+  manager.addPass(mlir::createConvertFuncToLLVMPass());
 }
 
 int main(int argc, char **argv) {
