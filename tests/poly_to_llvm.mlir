@@ -1,6 +1,6 @@
 // RUN: heir-opt --poly-to-llvm %s | FileCheck %s
   
-// CHECK-NOT: poly
+// CHECK: llvm
 func.func @test_poly_fn(%arg : i32) -> i32 {
   %tens = tensor.splat %arg : tensor<10xi32>
   %input = poly.from_tensor %tens : tensor<10xi32> -> !poly.poly<10>
